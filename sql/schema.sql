@@ -6,4 +6,4 @@ CREATE TABLE IF NOT EXISTS sensor_data(
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE INDEX idx_sensor_id ON sensor_data(sensor_id created_at DESC);
+CREATE INDEX idx_sensor_id ON sensor_data(sensor_id, created_at DESC);
