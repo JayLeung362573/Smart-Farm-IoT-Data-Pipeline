@@ -31,13 +31,13 @@ def db_worker(data_queue):
             break
 
 
-        conn = None;
+        conn = None
         try:
             conn = db_pool.getconn()
             with conn.cursor() as cur:
                 cur.execute(
-                    "INSERT INTO sensor_data(sensor_id, moisture, temperature)" \
-                    "Values(%s, %s, %s)",
+                    "INSERT INTO sensor_data(sensor_id, moisture, temperature, created_at)" \
+                    "Values(%s, %s, %s, NOW())",
                     (item['sensor_id'], item['moisture'], item['temperature'])
                 )
                 conn.commit()
