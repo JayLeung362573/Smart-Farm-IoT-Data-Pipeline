@@ -26,7 +26,9 @@ CREATE TABLE sensor_data (
     moisture FLOAT NOT NULL CHECK (moisture >= 0 AND moisture <= 100),
     temperature FLOAT NOT NULL CHECK (temperature >= -50 AND temperature <= 100),
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    PRIMARY KEY (id, created_at)
+    event_id UUID NOT NULL,
+    PRIMARY KEY (id, created_at),
+    UNIQUE (event_id, created_at)
 ) PARTITION BY RANGE (created_at);
 
 -- 3. Partitions
@@ -35,3 +37,5 @@ CREATE TABLE sensor_data_y2026m03 PARTITION OF sensor_data
 
 -- 4. Time-Series Indexes
 CREATE INDEX idx_sensor_time ON sensor_data (sensor_id, created_at DESC);
+
+CREATE INDEX idx_sensor_brin ON sensor_data USING BRIN (created_at);

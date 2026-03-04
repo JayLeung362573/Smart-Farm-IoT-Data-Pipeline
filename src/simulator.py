@@ -2,22 +2,29 @@ import threading
 import time
 import queue
 import random
+import uuid
+import logging
 from ingestion import start_workers
 
 data_queue = queue.Queue(maxsize=2000)
 shutdown_event = threading.Event()
+
+dropped_counter = 0
+counter_lock = threading.Lock()
 
 def virtual_sensor(sensor_id):
     while not shutdown_event.is_set():
         payload = {
             "sensor_id": sensor_id,
             "moisture": round(random.uniform(30,70),2),
-            "temperature": round(random.uniform(10,30),2)
+            "temperature": round(random.uniform(10,30),2),
+            "event_id": str(uuid.uuid4())
         }
         try:
-            data_queue.put(payload, timeout=1)
+            data_queue.put(payload, block=False)
         except queue.Full:
-            continue
+            with counter_lock:
+                dropped_counter += 1
         time.sleep(random.uniform(0.5, 1.5))
 
 if __name__ == "__main__":
@@ -31,10 +38,11 @@ if __name__ == "__main__":
 
     try:
         while True:
-            print(f"Data Queue Size: {data_queue.qsize()} items waiting for ingestion...")
-            time.sleep(0.5)
+            with counter_lock:
+                logging.info(f"STATUS - Queue Size: {data_queue.qsize()} | Total Dropped: {dropped_counter}")
+            time.sleep(1.0)
     except KeyboardInterrupt:
-        print("\nShutting down gracefully...")
+        logging.info("Graceful shutdown initiated...")
         shutdown_event.set()
         
         for _ in range(num_workers):
