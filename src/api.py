@@ -62,3 +62,31 @@ def list_sensors():
         raise HTTPException(status_code=500, detail=str(e))
     finally:
         db_pool.putconn(conn)
+
+@app.get("/sensors/{sensor_id}/latest")
+def get_latest_reading(sensor_id: int):
+    """
+    Get the absolute latest reading for a specific sensor.
+    Optimized by the (sensor_id, created_at DESC) index.
+    """
+    conn = db_pool.getconn()
+
+    try:
+        with conn.cursor(cursor_factory=extras.RealDictCursor) as cur:
+            cur.execute("""
+                SELECT sensor_id, moisture, temperature, created_at
+                FROM sensor_data
+                WHERE sensor_id = %s
+                ORDER BY created_at DESC
+                LIMIT 1;
+            """, (sensor_id,))
+
+            result = cur.fetchone()
+            if not result:
+                raise HTTPException(status_code=404, detail=f"No data found for sensor {sensor_id}")
+            return result
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        db_pool.putconn(conn)
