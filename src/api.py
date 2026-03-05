@@ -90,3 +90,34 @@ def get_latest_reading(sensor_id: int):
         raise HTTPException(status_code=500, detail=str(e))
     finally:
         db_pool.putconn(conn)
+
+@app.get("/fields/{field_id}/summary")
+def get_field_summary(field_id: int, window: str = "1h"):
+    """
+    Get aggregate stats for a field (avg/min/max) over a time window.
+    Leverages Table Partitioning via the created_at filter.
+    """
+
+    conn = db_pool.getconn()
+    try:
+        with conn.cursor(cursor_factory=extras.RealDictCursor) as cur:
+            cur.execute("""
+                SELECT
+                    f.name as field_name,
+                    COUNT(sd.id) as reading_count,
+                    ROUND(AVG(sd.moisture)::numeric, 2) as avg_moisture,
+                    ROUND(AVG(sd.temperature)::numeric, 2) as avg_temp
+                FROM fields f
+                JOIN sensors s on f.field_id = s.field_id
+                JOIN sensor_data sd on s.sensor_id = sd.sensor_id
+                WHERE f.field_id = %s
+                    AND sd.created_at > NOW() - (%s::interval)
+                GROUP BY f.name;
+            """, (field_id, window))
+            result = cur.fetchone()
+        return result or {"message": "No data found for this field in the selected window"}
+    
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        db_pool.putconn(conn)
