@@ -38,3 +38,27 @@ def health_check():
     return {"status": "online", 
             "message": "Smart Farm API is responding"}
 
+
+@app.get("/sensors")
+def list_sensors():
+    """
+    Returns a list of all registered sensors and their associated field names.
+    Uses a JOIN to combine metadata from 'sensors' and 'fields'.
+    """
+    conn = db_pool.getconn()
+    try:
+        with conn.cursor(cursor_factory=extras.RealDictCursor) as cur:
+            cur.execute("""
+                SELECT s.sensor_id, f.name as field_name, s.sensor_type, s.status
+                FROM sensors s
+                JOIN fields f ON s.field_id = f.field_id
+                ORDER BY s.sensor_id ASC;
+            """)
+            
+            sensors = cur.fetchall()
+            
+            return {"total": len(sensors), "data": sensors}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        db_pool.putconn(conn)
