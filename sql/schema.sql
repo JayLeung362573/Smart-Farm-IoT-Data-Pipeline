@@ -19,7 +19,7 @@ CREATE TABLE IF NOT EXISTS sensors (
 );
 
 -- 2. Partitioned Table
-DROP TABLE IF EXISTS sensor_data;
+DROP TABLE IF EXISTS sensor_data CASCADE;
 CREATE TABLE sensor_data (
     id SERIAL,
     sensor_id INT NOT NULL REFERENCES sensors(sensor_id),
@@ -55,3 +55,17 @@ WITH DATA;
 
 -- Create an index on the materialized view to make API lookups instant
 CREATE INDEX idx_hourly_stats_time ON hourly_sensor_stats(hour_bucket DESC);
+
+-- Seed 1 Farm
+INSERT INTO farms (owner_name, region) VALUES ('SmartFarm Global', 'North America') ON CONFLICT DO NOTHING;
+
+-- Seed 2 Farm
+INSERT INTO fields (farm_id, name) VALUES (1, 'North Field'), (1, 'South Field') ON CONFLICT DO NOTHING;
+
+-- Seed 500 Sensors (250 per field)
+INSERT INTO sensors (field_id, sensor_type)
+SELECT 
+    CASE WHEN i <= 250 THEN 1 ELSE 2 END,
+    'soil_moisture'
+FROM generate_series(1, 500) s(i)
+ON CONFLICT DO NOTHING;
