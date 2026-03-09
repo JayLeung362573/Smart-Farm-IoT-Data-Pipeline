@@ -3,17 +3,20 @@ from typing import List, Optional
 import psycopg2
 from psycopg2 import pool, extras
 import logging
+import os
 
 # 1. Initialize FastAPI
 app = FastAPI(title="Smart Farm IoT API",
               description="Real-time access to partitioned sensor data",
               version="1.0.0")
 
-# 2. Database Configuration
+DB_HOST = os.getenv("DB_HOST", "127.0.0.1")
+DB_PASSWORD = os.getenv("DB_PASSWORD", "3221")
+
 DB_PARAMS = {
     "user": "postgres",
-    "password": "3221", 
-    "host": "127.0.0.1",
+    "password": DB_PASSWORD, 
+    "host": DB_HOST,
     "port": "5432",
     "database": "smart_farm"
 }
@@ -94,8 +97,9 @@ def get_latest_reading(sensor_id: int):
 @app.get("/fields/{field_id}/summary")
 def get_field_summary(field_id: int, window: str = "1h"):
     """
-    Get aggregate stats for a field (avg/min/max) over a time window.
-    Leverages Table Partitioning via the created_at filter.
+    Get aggregate stats for a field.
+    optimized: Reads from the Materialized View 'hourly_sensor_stats'
+    instead of the raw 'sensor_data' table.
     """
 
     conn = db_pool.getconn()
@@ -104,16 +108,15 @@ def get_field_summary(field_id: int, window: str = "1h"):
             cur.execute("""
                 SELECT
                     f.name as field_name,
-                    COUNT(sd.id) as reading_count,
-                    ROUND(AVG(sd.moisture)::numeric, 2) as avg_moisture,
-                    ROUND(AVG(sd.temperature)::numeric, 2) as avg_temp
+                    SUM(mv.sample_count) as total_readings,
+                    ROUND(AVG(mv.avg_moisture)::numeric, 2) as avg_moisture,
+                    ROUND(AVG(mv.avg_temperature)::numeric, 2) as avg_temp
                 FROM fields f
                 JOIN sensors s on f.field_id = s.field_id
-                JOIN sensor_data sd on s.sensor_id = sd.sensor_id
+                JOIN hourly_sensor_stats mv ON s.sensor_id = mv.sensor_id
                 WHERE f.field_id = %s
-                    AND sd.created_at > NOW() - (%s::interval)
                 GROUP BY f.name;
-            """, (field_id, window))
+            """, (field_id,))
             result = cur.fetchone()
         return result or {"message": "No data found for this field in the selected window"}
     

@@ -4,23 +4,34 @@ import threading
 import logging
 import queue
 import time
+import os
 
 # Configure structured logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s [Worker-%(thread)d] %(levelname)s: %(message)s')
 
+DB_HOST = os.getenv("DB_HOST", "127.0.0.1")
+DB_PASSWORD = os.getenv("DB_PASSWORD", "3221")
+
 DB_PARAMS = {
     "user": "postgres",
-    "password": "3221", 
-    "host": "127.0.0.1",
+    "password": DB_PASSWORD, 
+    "host": DB_HOST,
     "port": "5432",
     "database": "smart_farm"
 }
 
-try:
-    db_pool = psycopg2.pool.SimpleConnectionPool(1, 10, **DB_PARAMS)
-    logging.info("Database connection pool initialized.")
-except Exception as e:
-    logging.error(f"Failed to initialize pool: {e}")
+db_pool = None
+
+def init_pool():
+    global db_pool
+    while db_pool is None:
+        try:
+            db_pool = psycopg2.pool.SimpleConnectionPool(1, 20, **DB_PARAMS)
+            logging.info("Successfully connected to the database pool.")
+        except Exception as e:
+            logging.error(f"Database not ready yet. Retrying in 2s: {e}")
+            time.sleep(2)
+
 
 def db_worker(data_queue, batch_size=100):
     batch = []
@@ -56,6 +67,8 @@ def db_worker(data_queue, batch_size=100):
 
     
 def start_workers(data_queue, num_workers=5):
+    init_pool()
+    
     threads = []
     for _ in range(num_workers):
         t = threading.Thread(target=db_worker, args=(data_queue,), daemon=True)
@@ -64,6 +77,10 @@ def start_workers(data_queue, num_workers=5):
     return threads
 
 def flush_batch(batch):
+    """Inserts a batch of readings using a single transaction."""
+    if not db_pool:
+        return
+    
     conn = None
     try:
         conn = db_pool.getconn()
