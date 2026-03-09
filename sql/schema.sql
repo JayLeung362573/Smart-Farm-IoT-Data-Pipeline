@@ -39,3 +39,19 @@ CREATE TABLE sensor_data_y2026m03 PARTITION OF sensor_data
 CREATE INDEX idx_sensor_time ON sensor_data (sensor_id, created_at DESC);
 
 CREATE INDEX idx_sensor_brin ON sensor_data USING BRIN (created_at);
+
+-- 5. pre-calculate averages so the API doesn't have to scan millions of rows
+CREATE MATERIALIZED VIEW hourly_sensor_stats AS
+SELECT
+    sensor_id,
+    date_trunc('hour', created_at) as hour_bucket,
+    ROUND(AVG(moisture)::numeric, 2) as avg_moisture,
+    ROUND(AVG(temperature)::numeric, 2) as avg_temperature,
+    COUNT(*) as sample_count
+
+FROM sensor_data
+GROUP BY sensor_id, hour_bucket
+WITH DATA;
+
+-- Create an index on the materialized view to make API lookups instant
+CREATE INDEX idx_hourly_stats_time ON hourly_sensor_stats(hour_bucket DESC);
