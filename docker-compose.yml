@@ -1,0 +1,38 @@
+services:
+  # 1. The Database
+  db:
+    image: postgres:18
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: smart_farm
+    ports:
+      - "5433:5432"
+    volumes:
+      - ./sql/schema.sql:/docker-entrypoint-initdb.d/schema.sql
+      - postgres_data:/var/lib/postgresql
+
+  # 2. The API
+  api:
+    build: .
+    command: uvicorn src.api:app --host 0.0.0.0 --port 8000
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+    environment:
+      DB_HOST: db
+      DB_PASSWORD: password
+
+  # 3. The Simulator/Ingestion Engine
+  engine:
+    build: .
+    command: python3 src/simulator.py
+    depends_on:
+      - db
+    environment:
+      DB_HOST: db
+      DB_PASSWORD: password
+
+volumes:
+  postgres_data:
