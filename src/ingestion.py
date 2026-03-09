@@ -85,9 +85,14 @@ def flush_batch(batch):
     try:
         conn = db_pool.getconn()
         with conn.cursor() as cur:
+            query = """
+                INSERT INTO sensor_data (sensor_id, moisture, temperature, event_id)
+                VALUES %s
+                ON CONFLICT (event_id, created_at) DO NOTHING;
+            """
             extras.execute_values(
                 cur,
-                "INSERT INTO sensor_data (sensor_id, moisture, temperature, event_id) VALUES %s",
+                query,
                 batch
             )
             conn.commit()
