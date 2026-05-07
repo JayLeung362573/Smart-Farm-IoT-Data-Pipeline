@@ -13,6 +13,7 @@ dropped_counter = 0
 counter_lock = threading.Lock()
 
 def virtual_sensor(sensor_id):
+    global dropped_counter
     while not shutdown_event.is_set():
         payload = {
             "sensor_id": sensor_id,

@@ -95,7 +95,7 @@ def get_latest_reading(sensor_id: int):
         db_pool.putconn(conn)
 
 @app.get("/fields/{field_id}/summary")
-def get_field_summary(field_id: int, window: str = "1h"):
+def get_field_summary(field_id: int):
     """
     Get aggregate stats for a field.
     optimized: Reads from the Materialized View 'hourly_sensor_stats'

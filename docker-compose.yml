@@ -3,9 +3,8 @@ services:
   db:
     image: postgres:18
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: smart_farm
+      - POSTGRES_PASSWORD=3221
+      - POSTGRES_DB=smart_farm
     ports:
       - "5433:5432"
     volumes:
@@ -15,24 +14,35 @@ services:
   # 2. The API
   api:
     build: .
-    command: uvicorn src.api:app --host 0.0.0.0 --port 8000
+    environment:
+      - DB_HOST=db
+      - DB_PASSWORD=3221
     ports:
       - "8000:8000"
     depends_on:
       - db
-    environment:
-      DB_HOST: db
-      DB_PASSWORD: password
 
   # 3. The Simulator/Ingestion Engine
   engine:
     build: .
-    command: python3 src/simulator.py
-    depends_on:
-      - db
     environment:
-      DB_HOST: db
-      DB_PASSWORD: password
+      - DB_HOST=db
+      - DB_PASSWORD=3221
+    depends_on:
+      seeder: # Wait for seeding to finish before simulating data
+        condition: service_completed_successfully
+  
+  # seeder
+  seeder:
+    build: .
+    command: python src/seed_db.py
+    environment:
+      - DB_HOST=db
+      - DB_PASSWORD=3221
+    depends_on:
+      db:
+        condition: service_healthy
+
 
 volumes:
   postgres_data:
