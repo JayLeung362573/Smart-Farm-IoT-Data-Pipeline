@@ -57,3 +57,19 @@ Field Summary: `http://localhost:8000/fields/1/summary`
 - Optimization: Moved from O(N) raw table scans to O(1) materialized view lookups for field analytics.
 
 - Reliability: Implemented a "Wait-for-DB" retry loop in the ingestion worker to handle distributed system startup lag.
+
+## Benchmark Results
+
+Environment:
+- Local Docker deployment
+- PostgreSQL 18
+- 500 simulated sensors
+- 5 ingestion workers
+- Batch size: 100
+
+Results:
+- Ingestion throughput: 567+ readings/sec
+- Dropped readings: 0
+- Batch insert speedup: 5.4× faster than single-row inserts
+- API latency: 2.78 ms average, 2.40 ms median over 100 requests
+- Max API latency observed: 26.25 ms
