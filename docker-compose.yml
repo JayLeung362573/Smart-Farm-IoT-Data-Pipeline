@@ -17,6 +17,7 @@ services:
   # 2. The API
   api:
     build: .
+    command: uvicorn src.api:app --host 0.0.0.0 --port 8000
     environment:
       - DB_HOST=db
       - DB_PASSWORD=3221
@@ -28,6 +29,7 @@ services:
   # 3. The Simulator/Ingestion Engine
   engine:
     build: .
+    command: python src/simulator.py
     environment:
       - DB_HOST=db
       - DB_PASSWORD=3221
