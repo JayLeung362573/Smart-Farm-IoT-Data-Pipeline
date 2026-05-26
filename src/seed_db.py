@@ -3,7 +3,7 @@ import os
 
 def seed():
     conn = psycopg2.connect(
-        dbname=("DB_NAME", "smart_farm"), 
+        dbname=os.getenv("DB_NAME", "smart_farm"), 
         user=os.getenv("DB_USER", "postgres"), 
         password=os.getenv("DB_PASSWORD", "3221"), 
         host=os.getenv("DB_HOST", "127.0.0.1"),

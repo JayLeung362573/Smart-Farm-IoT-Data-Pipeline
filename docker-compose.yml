@@ -1,53 +1,63 @@
 services:
-  # 1. The Database
   db:
     image: postgres:18
     environment:
-      - DB_HOST=db
-      - DB_PORT=5432
-      - DB_NAME=smart_farm
-      - DB_USER=postgres
-      - DB_PASSWORD=3221
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: "3221"
+      POSTGRES_DB: smart_farm
     ports:
       - "5433:5432"
     volumes:
       - ./sql/schema.sql:/docker-entrypoint-initdb.d/schema.sql
       - postgres_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d smart_farm"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
-  # 2. The API
-  api:
-    build: .
-    command: uvicorn src.api:app --host 0.0.0.0 --port 8000
-    environment:
-      - DB_HOST=db
-      - DB_PASSWORD=3221
-    ports:
-      - "8000:8000"
-    depends_on:
-      - db
-
-  # 3. The Simulator/Ingestion Engine
-  engine:
-    build: .
-    command: python src/simulator.py
-    environment:
-      - DB_HOST=db
-      - DB_PASSWORD=3221
-    depends_on:
-      seeder: # Wait for seeding to finish before simulating data
-        condition: service_completed_successfully
-  
-  # seeder
   seeder:
     build: .
     command: python src/seed_db.py
     environment:
-      - DB_HOST=db
-      - DB_PASSWORD=3221
+      DB_HOST: db
+      DB_PORT: "5432"
+      DB_NAME: smart_farm
+      DB_USER: postgres
+      DB_PASSWORD: "3221"
     depends_on:
       db:
         condition: service_healthy
 
+  api:
+    build: .
+    command: uvicorn src.api:app --host 0.0.0.0 --port 8000
+    environment:
+      DB_HOST: db
+      DB_PORT: "5432"
+      DB_NAME: smart_farm
+      DB_USER: postgres
+      DB_PASSWORD: "3221"
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+      seeder:
+        condition: service_completed_successfully
+
+  engine:
+    build: .
+    command: python src/simulator.py
+    environment:
+      DB_HOST: db
+      DB_PORT: "5432"
+      DB_NAME: smart_farm
+      DB_USER: postgres
+      DB_PASSWORD: "3221"
+    depends_on:
+      seeder:
+        condition: service_completed_successfully
 
 volumes:
   postgres_data:
