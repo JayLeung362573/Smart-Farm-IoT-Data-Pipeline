@@ -3,8 +3,11 @@ services:
   db:
     image: postgres:18
     environment:
-      - POSTGRES_PASSWORD=3221
-      - POSTGRES_DB=smart_farm
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_NAME=smart_farm
+      - DB_USER=postgres
+      - DB_PASSWORD=3221
     ports:
       - "5433:5432"
     volumes:
