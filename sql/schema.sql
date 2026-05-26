@@ -35,6 +35,9 @@ CREATE TABLE sensor_data (
 CREATE TABLE sensor_data_y2026m03 PARTITION OF sensor_data
     FOR VALUES FROM ('2026-03-01') TO ('2026-04-01');
 
+CREATE TABLE IF NOT EXISTS sensor_data_default
+    PARTITION OF sensor_data DEFAULT;   
+    
 -- 4. Time-Series Indexes
 CREATE INDEX idx_sensor_time ON sensor_data (sensor_id, created_at DESC);
 
