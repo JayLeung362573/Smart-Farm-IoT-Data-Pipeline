@@ -17,6 +17,10 @@ A containerized IoT telemetry pipeline that simulates soil sensor readings, batc
 # System Architecture
 The system is split into three decoupled services:
 
+For a deeper explanation of the data flow, storage strategy, indexing choices, and materialized view tradeoffs, see [`docs/architecture.md`](docs/architecture.md).
+
+The system is split into three decoupled services:
+
 1. Ingestion Engine: A multi-threaded Python worker that batches telemetry to minimize database IOPS.
 
 2. Database: PostgreSQL uses range partitioning, BRIN indexes, and materialized views to manage time-series telemetry.
