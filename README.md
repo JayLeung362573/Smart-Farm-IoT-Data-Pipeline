@@ -95,6 +95,20 @@ This project currently treats materialized views as a warm analytical layer. Ref
 
 - Reliability: Uses Docker Compose health checks and a Wait-for-DB retry loop in the ingestion worker to handle startup ordering.
 
+# Running Tests
+
+Run the test suite inside the Docker environment:
+
+```
+docker-compose run --rm --no-deps api python -m pytest
+```
+
+Current test coverage includes:
+
+- API health check
+- Sensor payload validation
+- Ingestion batch formatting
+
 # Benchmark Results
 
 Current benchmark numbers were removed until they can be reproduced through the benchmark script.
