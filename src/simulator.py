@@ -14,6 +14,7 @@ INGESTION_WORKERS = int(os.getenv("INGESTION_WORKERS", "5"))
 RUN_SECONDS = int(os.getenv("RUN_SECONDS", "0"))
 
 dropped_counter = 0
+produced_counter = 0
 counter_lock = threading.Lock()
 
 def generate_sensor_payload(sensor_id):
@@ -25,14 +26,19 @@ def generate_sensor_payload(sensor_id):
     }
 
 def virtual_sensor(sensor_id):
-    global dropped_counter
+    global dropped_counter, produced_counter
+
     while not shutdown_event.is_set():
         payload = generate_sensor_payload(sensor_id)
+
         try:
             data_queue.put(payload, block=False)
+            with counter_lock:
+                produced_counter += 1
         except queue.Full:
             with counter_lock:
                 dropped_counter += 1
+
         time.sleep(random.uniform(0.5, 1.5))
 
 if __name__ == "__main__":
@@ -74,4 +80,19 @@ if __name__ == "__main__":
             data_queue.put(None)
             
         data_queue.join()
+
+        elapsed = time.time() - start_time
+
+        with counter_lock:
+            summary = {
+                "sensor_count": SENSOR_COUNT,
+                "worker_count": INGESTION_WORKERS,
+                "run_seconds": RUN_SECONDS,
+                "elapsed_seconds": round(elapsed, 2),
+                "produced_readings": produced_counter,
+                "dropped_readings": dropped_counter,
+                "throughput_readings_per_sec": round(produced_counter / elapsed, 2) if elapsed > 0 else 0
+            }
+
         print("Cleaned up threads and connections.")
+        print(f"BENCHMARK_SUMMARY: {summary}")
