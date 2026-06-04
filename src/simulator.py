@@ -4,9 +4,14 @@ import queue
 import random
 import uuid
 import logging
+import os
 
 data_queue = queue.Queue(maxsize=2000)
 shutdown_event = threading.Event()
+
+SENSOR_COUNT = int(os.getenv("SENSOR_COUNT", "500"))
+INGESTION_WORKERS = int(os.getenv("INGESTION_WORKERS", "5"))
+RUN_SECONDS = int(os.getenv("RUN_SECONDS", "0"))
 
 dropped_counter = 0
 counter_lock = threading.Lock()
@@ -33,24 +38,40 @@ def virtual_sensor(sensor_id):
 if __name__ == "__main__":
     from ingestion import start_workers
     
-    num_workers = 5
+    num_workers = INGESTION_WORKERS
     worker_threads = start_workers(data_queue, num_workers)
 
-    print(f"Launching {500} sensors...")
-    for i in range(500):
+    print(f"Launching {SENSOR_COUNT} sensors...")
+    for i in range(SENSOR_COUNT):
         sensor_thread = threading.Thread(target=virtual_sensor, args=(i,), daemon=True)
         sensor_thread.start()
 
+    start_time = time.time()
+
     try:
         while True:
+            elapsed = time.time() - start_time
+
             with counter_lock:
-                logging.info(f"STATUS - Queue Size: {data_queue.qsize()} | Total Dropped: {dropped_counter}")
+                logging.info(
+                    f"STATUS - Queue Size: {data_queue.qsize()} | "
+                    f"Total Dropped: {dropped_counter} | "
+                    f"Elapsed: {elapsed:.2f}s"
+                )
+            
+            if RUN_SECONDS > 0 and elapsed >= RUN_SECONDS:
+                logging.info("Configured run duration reached. Stopping simulator...")
+                break
+
             time.sleep(1.0)
     except KeyboardInterrupt:
         logging.info("Graceful shutdown initiated...")
+
+    finally:
         shutdown_event.set()
         
         for _ in range(num_workers):
             data_queue.put(None)
             
+        data_queue.join()
         print("Cleaned up threads and connections.")
