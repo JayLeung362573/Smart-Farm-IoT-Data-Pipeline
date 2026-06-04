@@ -22,6 +22,14 @@ DB_PARAMS = {
 
 db_pool = None
 
+def to_insert_tuple(item):
+    return (
+        item["sensor_id"],
+        item["moisture"],
+        item["temperature"],
+        item.get("event_id")
+    )
+
 def init_pool():
     global db_pool
     while db_pool is None:
@@ -46,12 +54,7 @@ def db_worker(data_queue, batch_size=100):
                 data_queue.task_done()
                 break
 
-            batch.append((
-                item['sensor_id'],
-                item['moisture'],
-                item['temperature'],
-                item.get('event_id')
-            ))
+            batch.append(to_insert_tuple(item))
 
             if len(batch) >= batch_size:
                 flush_batch(batch)
