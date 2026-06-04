@@ -4,7 +4,6 @@ import queue
 import random
 import uuid
 import logging
-from ingestion import start_workers
 
 data_queue = queue.Queue(maxsize=2000)
 shutdown_event = threading.Event()
@@ -12,15 +11,18 @@ shutdown_event = threading.Event()
 dropped_counter = 0
 counter_lock = threading.Lock()
 
+def generate_sensor_payload(sensor_id):
+    return {
+        "sensor_id": sensor_id,
+        "moisture": round(random.uniform(30, 70), 2),
+        "temperature": round(random.uniform(10, 30), 2),
+        "event_id": str(uuid.uuid4())
+    }
+
 def virtual_sensor(sensor_id):
     global dropped_counter
     while not shutdown_event.is_set():
-        payload = {
-            "sensor_id": sensor_id,
-            "moisture": round(random.uniform(30,70),2),
-            "temperature": round(random.uniform(10,30),2),
-            "event_id": str(uuid.uuid4())
-        }
+        payload = generate_sensor_payload(sensor_id)
         try:
             data_queue.put(payload, block=False)
         except queue.Full:
@@ -29,6 +31,8 @@ def virtual_sensor(sensor_id):
         time.sleep(random.uniform(0.5, 1.5))
 
 if __name__ == "__main__":
+    from ingestion import start_workers
+    
     num_workers = 5
     worker_threads = start_workers(data_queue, num_workers)
 
