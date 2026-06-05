@@ -116,5 +116,10 @@ Current benchmark numbers were removed until they can be reproduced through the 
 Planned benchmark command:
 
 ```
+python3 scripts/benchmark_ingestion.py --sensors 500 --workers 5 --batch-size 100 --duration 60
+```
+
+On systems where python points to Python 3, this also works:
+```
 python scripts/benchmark_ingestion.py --sensors 500 --workers 5 --batch-size 100 --duration 60
 ```
