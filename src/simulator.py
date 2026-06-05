@@ -12,6 +12,7 @@ shutdown_event = threading.Event()
 SENSOR_COUNT = int(os.getenv("SENSOR_COUNT", "500"))
 INGESTION_WORKERS = int(os.getenv("INGESTION_WORKERS", "5"))
 RUN_SECONDS = int(os.getenv("RUN_SECONDS", "0"))
+BATCH_SIZE = int(os.getenv("BATCH_SIZE", "100"))
 
 dropped_counter = 0
 produced_counter = 0
@@ -87,6 +88,7 @@ if __name__ == "__main__":
             summary = {
                 "sensor_count": SENSOR_COUNT,
                 "worker_count": INGESTION_WORKERS,
+                "batch_size": BATCH_SIZE,
                 "run_seconds": RUN_SECONDS,
                 "elapsed_seconds": round(elapsed, 2),
                 "produced_readings": produced_counter,

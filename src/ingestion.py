@@ -11,6 +11,7 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s [Worker-%(thread)d] 
 
 DB_HOST = os.getenv("DB_HOST", "127.0.0.1")
 DB_PASSWORD = os.getenv("DB_PASSWORD", "3221")
+BATCH_SIZE = int(os.getenv("BATCH_SIZE", "100"))
 
 DB_PARAMS = {
     "user": "postgres",
@@ -69,7 +70,7 @@ def db_worker(data_queue, batch_size=100):
             continue
 
     
-def start_workers(data_queue, num_workers=5):
+def start_workers(data_queue, num_workers=BATCH_SIZE):
     init_pool()
     
     threads = []
