@@ -5,6 +5,7 @@ import random
 import uuid
 import logging
 import os
+import json
 
 data_queue = queue.Queue(maxsize=2000)
 shutdown_event = threading.Event()
@@ -97,4 +98,4 @@ if __name__ == "__main__":
             }
 
         print("Cleaned up threads and connections.")
-        print(f"BENCHMARK_SUMMARY: {summary}")
+        print(f"BENCHMARK_SUMMARY: {json.dumps(summary)}")
