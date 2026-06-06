@@ -1,6 +1,7 @@
 import argparse
 import subprocess
 import sys
+import json
 
 
 def parse_args():
@@ -45,12 +46,35 @@ def main():
     print(f"  duration:   {args.duration}s")
     print()
 
-    result = subprocess.run(command)
+    result = subprocess.run(
+        command,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT
+    )
+
+    print(result.stdout)
 
     if result.returncode != 0:
         print("Benchmark failed.", file=sys.stderr)
         sys.exit(result.returncode)
+    
+    summary_line = None
+    for line in result.stdout.splitlines():
+        if line.startswith("BENCHMARK_SUMMARY:"):
+            summary_line = line
+            break
 
+    if summary_line is None:
+        print("Benchmark completed, but no BENCHMARK_SUMMARY line was found.", file=sys.stderr)
+        sys.exit(1)
+
+    summary_json = summary_line.replace("BENCHMARK_SUMMARY:", "", 1).strip()
+    summary = json.loads(summary_json)
+
+    print("\nParsed benchmark summary:")
+    print(json.dumps(summary, indent=2))
+    
 
 if __name__ == "__main__":
     main()
