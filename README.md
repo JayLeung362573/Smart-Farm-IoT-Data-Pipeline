@@ -116,6 +116,22 @@ Current test coverage includes:
 - Sensor payload validation
 - Ingestion batch formatting
 
+## Running a Local Smoke Test
+
+After starting the system with Docker Compose:
+
+```bash
+docker-compose up --build
+```
+
+Run the smoke test in another terminal:
+
+```bash
+./scripts/smoke_test.sh
+```
+
+The smoke test checks API health, seeded sensor metadata, latest sensor ingestion, materialized view refresh, and field-level summary output.
+
 ## Benchmarking
 
 The ingestion benchmark runs the simulator through Docker Compose and requires the database service to already be running.
