@@ -1,4 +1,7 @@
 # Smart-Farm-IoT-Data-Pipeline
+
+![Tests](https://github.com/JayLeung362573/Smart-Farm-IoT-Data-Pipeline/actions/workflows/tests.yml/badge.svg)
+
 A containerized IoT telemetry pipeline that simulates soil sensor readings, batches them through Python ingestion workers, stores time-series data in PostgreSQL, and exposes field-level summaries through FastAPI.
 
 ## Key Features
