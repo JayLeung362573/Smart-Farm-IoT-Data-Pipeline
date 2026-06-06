@@ -1,7 +1,7 @@
 # Smart-Farm-IoT-Data-Pipeline
 A containerized IoT telemetry pipeline that simulates soil sensor readings, batches them through Python ingestion workers, stores time-series data in PostgreSQL, and exposes field-level summaries through FastAPI.
 
-# Key Features
+## Key Features
 - High Concurrency: Simulates 500 virtual IoT sensors producing soil telemetry readings.
 
 - Tiered Storage Strategy:
@@ -14,52 +14,56 @@ A containerized IoT telemetry pipeline that simulates soil sensor readings, batc
 
 - Optimized API: FastAPI backend uses indexed sensor lookups and a materialized view for field-level summary queries.
 
-# System Architecture
-The system is split into three decoupled services:
+## System Architecture
 
 For a deeper explanation of the data flow, storage strategy, indexing choices, and materialized view tradeoffs, see [`docs/architecture.md`](docs/architecture.md).
 
 The system is split into three decoupled services:
 
-1. Ingestion Engine: A multi-threaded Python worker that batches telemetry to minimize database IOPS.
+1. **Ingestion Engine**: A multi-threaded Python worker that batches telemetry to reduce per-row database write overhead.
+2. **Database**: PostgreSQL uses range partitioning, BRIN indexes, and materialized views to manage time-series telemetry.
+3. **REST API**: Provides latest sensor readings and field-level summaries from the refreshed analytical view.
 
-2. Database: PostgreSQL uses range partitioning, BRIN indexes, and materialized views to manage time-series telemetry.
-
-3. REST API: Provides latest sensor readings and field-level summaries from the refreshed analytical view.
-
-# Tech Stack
+## Tech Stack
 - Backend: Python 3.12, FastAPI
 
 - Database: PostgreSQL with partitioning, BRIN indexes, and materialized views.
 
 - DevOps: Docker, Docker Compose
 
-- Libraries: Psycopg2 (Connection Pooling), Pydantic
+- Libraries: psycopg2, Pydantic, pytest
 
-# Getting Started
-Prerequisites
-- Docker Desktop (ensure it is running)
-- Port Availability: Ensure ports 8000 (API) and 5433 (PostgreSQL) are not currently in use by local services.
+## Getting Started
 
-One-Command Deployment
+### Prerequisites
+
+- Docker Desktop
+- Ports 8000 and 5433 available
+
+### One-Command Deployment
+
 Clone the repository and run:
 
-`docker-compose up --build`
+```bash
+docker-compose up --build
+```
 
 The system will automatically initialize the schema, seed 500 sensors, and begin the ingestion simulation.
 
-Accessing the API
-Interactive Docs: `http://localhost:8000/docs`
+### Accessing the API
 
-Field Summary: `http://localhost:8000/fields/1/summary`
+- Interactive Docs: `http://localhost:8000/docs`
+- Sensors: `http://localhost:8000/sensors`
+- Latest Sensor Reading: `http://localhost:8000/sensors/1/latest`
+- Field Summary: `http://localhost:8000/fields/1/summary`
 
-# Refreshing Analytical Summaries
+## Refreshing Analytical Summaries
 
 Raw sensor readings are ingested continuously into the `sensor_data` table. Field-level summary endpoints read from the `hourly_sensor_stats` materialized view, so the view must be refreshed after new readings are inserted.
 
 With the system already running, refresh the materialized view:
 
-```
+```bash
 docker-compose run --rm --no-deps \
   -e DB_HOST=db \
   -e DB_PORT=5432 \
@@ -70,12 +74,12 @@ docker-compose run --rm --no-deps \
 ```
 Then query the field summary endpoint:
 
-```
+```bash
 curl http://localhost:8000/fields/1/summary
 ```
 
 Example response:
-```
+```json
 {
   "field_name": "North Field",
   "total_readings": 22559,
@@ -86,7 +90,7 @@ Example response:
 
 This project currently treats materialized views as a warm analytical layer. Refreshing summaries manually avoids refreshing the view on every insert, which would slow down ingestion. A future improvement is adding scheduled or concurrent refreshes.
 
-# Performance & Scaling
+## Performance & Scaling
 - Concurrency: Simulates 500 virtual sensor streams using Python threads.
 
 - Write Optimization: Batches sensor readings before inserting them into PostgreSQL.
@@ -95,11 +99,11 @@ This project currently treats materialized views as a warm analytical layer. Ref
 
 - Reliability: Uses Docker Compose health checks and a Wait-for-DB retry loop in the ingestion worker to handle startup ordering.
 
-# Running Tests
+## Running Tests
 
 Run the test suite inside the Docker environment:
 
-```
+```bash
 docker-compose run --rm --no-deps api python -m pytest
 ```
 
@@ -109,17 +113,51 @@ Current test coverage includes:
 - Sensor payload validation
 - Ingestion batch formatting
 
-# Benchmark Results
+## Benchmarking
 
-Current benchmark numbers were removed until they can be reproduced through the benchmark script.
+The ingestion benchmark runs the simulator through Docker Compose and requires the database service to already be running.
 
-Planned benchmark command:
+Start the system:
 
-```
-python3 scripts/benchmark_ingestion.py --sensors 500 --workers 5 --batch-size 100 --duration 60
+```bash
+docker-compose up --build
 ```
 
-On systems where python points to Python 3, this also works:
+In another terminal, run a benchmark:
+
+```bash
+python3 scripts/benchmark_ingestion.py \
+  --sensors 500 \
+  --workers 5 \
+  --batch-size 100 \
+  --duration 60 \
+  --output results/benchmark.json
 ```
-python scripts/benchmark_ingestion.py --sensors 500 --workers 5 --batch-size 100 --duration 60
+
+For a shorter local smoke test:
+
+```bash
+python3 scripts/benchmark_ingestion.py \
+  --sensors 10 \
+  --workers 2 \
+  --batch-size 25 \
+  --duration 5 \
+  --output results/benchmark.json
 ```
+
+Example output:
+
+```json
+{
+  "sensor_count": 10,
+  "worker_count": 2,
+  "batch_size": 25,
+  "run_seconds": 5,
+  "elapsed_seconds": 5.05,
+  "produced_readings": 56,
+  "dropped_readings": 0,
+  "throughput_readings_per_sec": 11.1
+}
+```
+
+Benchmark result files are written under `results/`, which is ignored by Git because results vary by machine and runtime environment.
