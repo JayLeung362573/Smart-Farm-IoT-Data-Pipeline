@@ -13,6 +13,12 @@ def parse_args():
     parser.add_argument("--workers", type=int, default=5)
     parser.add_argument("--batch-size", type=int, default=100)
     parser.add_argument("--duration", type=int, default=60)
+    parser.add_argument(
+        "--output",
+        type=str,
+        default=None,
+        help="Optional path to save the parsed benchmark summary as JSON."
+    )
 
     return parser.parse_args()
 
@@ -74,6 +80,18 @@ def main():
 
     print("\nParsed benchmark summary:")
     print(json.dumps(summary, indent=2))
+
+    if args.output:
+        from pathlib import Path
+
+        output_path = Path(args.output)
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+
+        with output_path.open("w", encoding="utf-8") as f:
+            json.dump(summary, f, indent=2)
+            f.write("\n")
+
+        print(f"\nSaved benchmark summary to: {output_path}")
     
 
 if __name__ == "__main__":
