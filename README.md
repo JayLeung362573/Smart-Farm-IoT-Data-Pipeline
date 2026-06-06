@@ -102,6 +102,20 @@ This project currently treats materialized views as a warm analytical layer. Ref
 
 - Reliability: Uses Docker Compose health checks and a Wait-for-DB retry loop in the ingestion worker to handle startup ordering.
 
+## Common Commands
+
+This project includes a `Makefile` for common local workflows.
+
+```bash
+make up              # Start the full Docker Compose system
+make test            # Run pytest inside the API container
+make smoke           # Run local end-to-end smoke test
+make refresh         # Refresh the materialized analytical view
+make benchmark-smoke # Run a short benchmark
+make benchmark       # Run the default 500-sensor benchmark
+make clean           # Remove containers, volumes, and local benchmark results
+```
+
 ## Running Tests
 
 Run the test suite inside the Docker environment:
