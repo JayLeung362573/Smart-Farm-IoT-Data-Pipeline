@@ -118,10 +118,12 @@ make clean           # Remove containers, volumes, and local benchmark results
 
 ## Running Tests
 
+For more details about the unit, smoke, and benchmark testing strategy, see [`docs/testing.md`](docs/testing.md).
+
 Run the test suite inside the Docker environment:
 
 ```bash
-docker-compose run --rm --no-deps api python -m pytest
+make test
 ```
 
 Current test coverage includes:
