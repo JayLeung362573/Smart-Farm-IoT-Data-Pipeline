@@ -86,14 +86,19 @@ Virtual sensor threads generate readings and push them into a bounded queue. Dat
 
 Batching reduces per-row transaction overhead compared with inserting one reading at a time.
 
-## Reliability Choices
+## Reliability and Reproducibility Choices
 
-The project includes basic startup reliability mechanisms:
+The project includes several mechanisms to make the system easier to run, test, and reproduce locally:
 
-- Docker Compose health checks wait for PostgreSQL to become available.
-- The ingestion worker includes Wait-for-DB retry logic.
-- The ingestion queue has a maximum size to avoid unbounded memory growth.
+- Docker Compose health checks wait for PostgreSQL to become available before dependent services start.
+- The ingestion worker includes Wait-for-DB retry logic to handle startup ordering.
+- The ingestion queue has a maximum size to avoid unbounded memory growth during bursts.
 - Sensor readings include event IDs to make duplicate-handling logic easier to extend.
+- A Makefile provides repeatable commands for startup, testing, smoke testing, refreshing materialized views, and benchmarking.
+- Unit tests cover API health checks, sensor payload validation, and ingestion batch formatting.
+- A local smoke test verifies API health, sensor metadata seeding, live ingestion, materialized view refresh, and field-level summary output.
+- A benchmark script measures ingestion throughput under configurable sensor counts, worker counts, batch sizes, and run durations.
+- GitHub Actions runs the unit test suite automatically.
 
 ## Tradeoffs and Limitations
 
@@ -101,9 +106,10 @@ This project is designed as a portfolio-scale backend/data system, not a product
 
 Current limitations:
 
-- Materialized views are refreshed manually.
-- Benchmark numbers are being refactored into a reproducible script.
+- Materialized views are refreshed manually rather than on a schedule.
 - The simulator runs inside one container and uses Python threads rather than distributed sensor clients.
+- Current CI runs unit tests only; Docker Compose integration and smoke tests are verified locally.
+- Current tests do not yet include database-backed integration tests for schema initialization, materialized view refresh, or API queries against a live PostgreSQL instance.
 - There is no production-grade authentication or authorization.
 - Retention logic is planned but not yet implemented as a scheduled maintenance process.
 
@@ -111,8 +117,8 @@ Current limitations:
 
 Planned improvements:
 
-- Add reproducible ingestion benchmark script.
-- Add pytest coverage for API endpoints, ingestion batching, data validation, and DB retry logic.
+- Add database-backed integration tests for schema initialization, materialized view refresh, and API summary queries.
+- Add a separate optional GitHub Actions workflow for Docker Compose integration tests.
 - Add scheduled or concurrent materialized view refresh.
 - Add raw-data retention script for old partitions.
-- Add CI workflow to run tests automatically.
+- Add benchmark result tables to the README for common configurations such as 500, 1000, and 5000 virtual sensors.
