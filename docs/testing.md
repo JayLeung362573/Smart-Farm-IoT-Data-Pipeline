@@ -42,7 +42,25 @@ In another terminal:
 make smoke
 ```
 
-## 3. Benchmark Smoke Test
+## 3. Database-Backed Integration Test
+
+The integration test verifies that the Docker Compose PostgreSQL service, schema initialization, seeded metadata, raw telemetry insertion, materialized view refresh, and field-level summary query work together.
+
+This test is skipped by default during the normal unit test run because it requires a running PostgreSQL database.
+
+Start the database service:
+
+```bash
+docker-compose up -d db
+```
+
+Run the integration test:
+
+```bash
+make test-integration
+```
+
+## 4. Benchmark Smoke Test
 
 The benchmark smoke test runs a short ingestion benchmark and writes a JSON result under `results/`.
 
@@ -54,13 +72,12 @@ make benchmark-smoke
 
 GitHub Actions currently runs the unit test suite only.
 
-The CI intentionally avoids starting PostgreSQL because the current unit tests do not require a database. Full Docker Compose integration is verified locally through the smoke test.
+The CI intentionally avoids starting PostgreSQL because the default test command skips database-backed integration tests unless `RUN_DB_INTEGRATION=1` is set. Full Docker Compose integration is verified locally through the smoke test and the optional integration test.
 
 ## Future Testing Improvements
 
 Planned improvements:
 
-- Add database-backed API integration tests
 - Add schema initialization test
 - Add materialized view refresh test
 - Add a separate optional GitHub Actions integration workflow

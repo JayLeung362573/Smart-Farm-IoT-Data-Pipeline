@@ -1,4 +1,4 @@
-.PHONY: up down test smoke refresh benchmark-smoke benchmark clean
+.PHONY: up down test test-integration smoke refresh benchmark-smoke benchmark clean
 
 up:
 	docker-compose up --build
@@ -8,6 +8,16 @@ down:
 
 test:
 	docker-compose run --rm --no-deps api python -m pytest
+
+test-integration:
+	docker-compose run --rm \
+		-e RUN_DB_INTEGRATION=1 \
+		-e DB_HOST=db \
+		-e DB_PORT=5432 \
+		-e DB_NAME=smart_farm \
+		-e DB_USER=postgres \
+		-e DB_PASSWORD=3221 \
+		api python -m pytest tests/test_db_integration.py -v
 
 smoke:
 	./scripts/smoke_test.sh
