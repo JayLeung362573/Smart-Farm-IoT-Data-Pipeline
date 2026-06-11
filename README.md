@@ -107,30 +107,47 @@ This project currently treats materialized views as a warm analytical layer. Ref
 This project includes a `Makefile` for common local workflows.
 
 ```bash
-make up              # Start the full Docker Compose system
-make test            # Run pytest inside the API container
-make smoke           # Run local end-to-end smoke test
-make refresh         # Refresh the materialized analytical view
-make benchmark-smoke # Run a short benchmark
-make benchmark       # Run the default 500-sensor benchmark
-make clean           # Remove containers, volumes, and local benchmark results
+make up               # Start the full Docker Compose system
+make test             # Run pytest inside the API container
+make test-integration # Run database-backed PostgreSQL integration test
+make smoke            # Run local end-to-end smoke test
+make refresh          # Refresh the materialized analytical view
+make benchmark-smoke  # Run a short benchmark
+make benchmark        # Run the default 500-sensor benchmark
+make clean            # Remove containers, volumes, and local benchmark results
 ```
 
 ## Running Tests
 
-For more details about the unit, smoke, and benchmark testing strategy, see [`docs/testing.md`](docs/testing.md).
+For more details about the unit, integration, smoke, and benchmark testing strategy, see [`docs/testing.md`](docs/testing.md).
 
-Run the test suite inside the Docker environment:
+Run the default test suite inside the Docker environment:
 
 ```bash
 make test
 ```
 
-Current test coverage includes:
+The default test suite includes:
 
 - API health check
 - Sensor payload validation
 - Ingestion batch formatting
+
+Database-backed integration testing is available through a separate command because it requires a running PostgreSQL service.
+
+Start the database service:
+
+```bash
+docker-compose up -d db
+```
+
+Run the integration test:
+
+```bash
+make test-integration
+```
+
+The integration test verifies PostgreSQL connectivity, schema initialization, seeded sensor metadata, raw telemetry insertion, materialized view refresh, and field-level summary querying.
 
 ## Running a Local Smoke Test
 
