@@ -42,6 +42,41 @@ def init_pool():
             time.sleep(2)
 
 
+def fetch_sensor_ids(limit):
+    """Return valid sensor IDs from PostgreSQL for simulator workers."""
+    if limit <= 0:
+        raise ValueError("Sensor count must be greater than zero.")
+
+    init_pool()
+
+    conn = None
+    try:
+        conn = db_pool.getconn()
+
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT sensor_id
+                FROM sensors
+                ORDER BY sensor_id
+                LIMIT %s;
+                """,
+                (limit,),
+            )
+            sensor_ids = [row[0] for row in cur.fetchall()]
+    finally:
+        if conn:
+            db_pool.putconn(conn)
+
+    if len(sensor_ids) < limit:
+        raise ValueError(
+            f"Requested {limit} sensors, but only "
+            f"{len(sensor_ids)} sensor records exist in PostgreSQL."
+        )
+
+    return sensor_ids
+
+
 def db_worker(data_queue, batch_size=100):
     batch = []
     while(True):

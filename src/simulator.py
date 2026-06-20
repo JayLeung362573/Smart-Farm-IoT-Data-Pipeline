@@ -44,14 +44,19 @@ def virtual_sensor(sensor_id):
         time.sleep(random.uniform(0.5, 1.5))
 
 if __name__ == "__main__":
-    from ingestion import start_workers
+    from ingestion import fetch_sensor_ids, start_workers
     
     num_workers = INGESTION_WORKERS
+    sensor_ids = fetch_sensor_ids(SENSOR_COUNT)
     worker_threads = start_workers(data_queue, num_workers)
 
-    print(f"Launching {SENSOR_COUNT} sensors...")
-    for i in range(SENSOR_COUNT):
-        sensor_thread = threading.Thread(target=virtual_sensor, args=(i,), daemon=True)
+    print(f"Launching {len(sensor_ids)} sensors...")
+    for sensor_id in sensor_ids:
+        sensor_thread = threading.Thread(
+            target=virtual_sensor,
+            args=(sensor_id,),
+            daemon=True,
+        )
         sensor_thread.start()
 
     start_time = time.time()
