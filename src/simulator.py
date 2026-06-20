@@ -44,11 +44,22 @@ def virtual_sensor(sensor_id):
         time.sleep(random.uniform(0.5, 1.5))
 
 if __name__ == "__main__":
-    from ingestion import fetch_sensor_ids, start_workers
+    from ingestion import (
+        fetch_sensor_ids,
+        get_ingestion_metrics,
+        reset_ingestion_metrics,
+        start_workers,
+    )
     
     num_workers = INGESTION_WORKERS
     sensor_ids = fetch_sensor_ids(SENSOR_COUNT)
-    worker_threads = start_workers(data_queue, num_workers)
+
+    reset_ingestion_metrics()
+    worker_threads = start_workers(
+        data_queue,
+        num_workers,
+        BATCH_SIZE,
+    )
 
     print(f"Launching {len(sensor_ids)} sensors...")
     for sensor_id in sensor_ids:
@@ -90,6 +101,11 @@ if __name__ == "__main__":
 
         elapsed = time.time() - start_time
 
+        ingestion_metrics = get_ingestion_metrics()
+        committed_readings = ingestion_metrics["committed_readings"]
+        failed_readings = ingestion_metrics["failed_readings"]
+        skipped_readings = ingestion_metrics["skipped_readings"]
+
         with counter_lock:
             summary = {
                 "sensor_count": SENSOR_COUNT,
@@ -98,8 +114,25 @@ if __name__ == "__main__":
                 "run_seconds": RUN_SECONDS,
                 "elapsed_seconds": round(elapsed, 2),
                 "produced_readings": produced_counter,
+                "committed_readings": committed_readings,
+                "failed_readings": failed_readings,
+                "skipped_readings": skipped_readings,
                 "dropped_readings": dropped_counter,
-                "throughput_readings_per_sec": round(produced_counter / elapsed, 2) if elapsed > 0 else 0
+                "producer_throughput_readings_per_sec": (
+                    round(produced_counter / elapsed, 2)
+                    if elapsed > 0
+                    else 0
+                ),
+                "database_throughput_readings_per_sec": (
+                    round(committed_readings / elapsed, 2)
+                    if elapsed > 0
+                    else 0
+                ),
+                "commit_success_rate_percent": (
+                    round(committed_readings / produced_counter * 100, 2)
+                    if produced_counter > 0
+                    else 0
+                ),
             }
 
         print("Cleaned up threads and connections.")

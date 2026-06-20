@@ -23,6 +23,32 @@ DB_PARAMS = {
 
 db_pool = None
 
+committed_counter = 0
+failed_counter = 0
+skipped_counter = 0
+metrics_lock = threading.Lock()
+
+
+def reset_ingestion_metrics():
+    """Reset ingestion counters before a benchmark run."""
+    global committed_counter, failed_counter, skipped_counter
+
+    with metrics_lock:
+        committed_counter = 0
+        failed_counter = 0
+        skipped_counter = 0
+
+
+def get_ingestion_metrics():
+    """Return a thread-safe snapshot of ingestion counters."""
+    with metrics_lock:
+        return {
+            "committed_readings": committed_counter,
+            "failed_readings": failed_counter,
+            "skipped_readings": skipped_counter,
+        }
+
+
 def to_insert_tuple(item):
     return (
         item["sensor_id"],
@@ -105,38 +131,79 @@ def db_worker(data_queue, batch_size=100):
             continue
 
     
-def start_workers(data_queue, num_workers=BATCH_SIZE):
+def start_workers(data_queue, num_workers, batch_size=BATCH_SIZE):
     init_pool()
-    
+
     threads = []
     for _ in range(num_workers):
-        t = threading.Thread(target=db_worker, args=(data_queue,), daemon=True)
-        t.start()
-        threads.append(t)
+        thread = threading.Thread(
+            target=db_worker,
+            args=(data_queue, batch_size),
+            daemon=True,
+        )
+        thread.start()
+        threads.append(thread)
+
     return threads
 
 def flush_batch(batch):
-    """Inserts a batch of readings using a single transaction."""
+    """Insert one batch and update thread-safe ingestion metrics."""
+    global committed_counter, failed_counter, skipped_counter
+
+    if not batch:
+        return 0
+
     if not db_pool:
-        return
-    
+        with metrics_lock:
+            failed_counter += len(batch)
+        return 0
+
     conn = None
+
     try:
         conn = db_pool.getconn()
+
         with conn.cursor() as cur:
             query = """
-                INSERT INTO sensor_data (sensor_id, moisture, temperature, event_id)
+                INSERT INTO sensor_data (
+                    sensor_id,
+                    moisture,
+                    temperature,
+                    event_id
+                )
                 VALUES %s
-                ON CONFLICT (event_id, created_at) DO NOTHING;
+                ON CONFLICT (event_id, created_at) DO NOTHING
+                RETURNING id;
             """
-            extras.execute_values(
+
+            inserted_rows = extras.execute_values(
                 cur,
                 query,
-                batch
+                batch,
+                fetch=True,
             )
-            conn.commit()
-    except Exception as e:
-        logging.error(f"Batch insertion error: {e}")
+
+        conn.commit()
+
+        committed = len(inserted_rows)
+        skipped = len(batch) - committed
+
+        with metrics_lock:
+            committed_counter += committed
+            skipped_counter += skipped
+
+        return committed
+
+    except Exception as error:
+        if conn:
+            conn.rollback()
+
+        with metrics_lock:
+            failed_counter += len(batch)
+
+        logging.error(f"Batch insertion error: {error}")
+        return 0
+
     finally:
         if conn:
             db_pool.putconn(conn)
