@@ -88,37 +88,39 @@ Batching reduces per-row transaction overhead compared with inserting one readin
 
 ## Reliability and Reproducibility Choices
 
-The project includes several mechanisms to make the system easier to run, test, and reproduce locally:
+The project includes several mechanisms to make the system easier to run, test, and reproduce:
 
-- Docker Compose health checks wait for PostgreSQL to become available before dependent services start.
-- The ingestion worker includes Wait-for-DB retry logic to handle startup ordering.
-- The ingestion queue has a maximum size to avoid unbounded memory growth during bursts.
-- Sensor readings include event IDs to make duplicate-handling logic easier to extend.
-- A Makefile provides repeatable commands for startup, testing, smoke testing, refreshing materialized views, and benchmarking.
-- Unit tests cover API health checks, sensor payload validation, and ingestion batch formatting.
-- A local smoke test verifies API health, sensor metadata seeding, live ingestion, materialized view refresh, and field-level summary output.
-- A benchmark script measures ingestion throughput under configurable sensor counts, worker counts, batch sizes, and run durations.
-- GitHub Actions runs the unit test suite automatically.
+* Docker Compose health checks wait for PostgreSQL before dependent services start.
+* The ingestion process retries database-pool initialization to handle startup ordering.
+* A bounded ingestion queue prevents unlimited memory growth during bursts.
+* The simulator loads valid sensor IDs from PostgreSQL and fails clearly when the requested sensor count exceeds the available sensor metadata.
+* Batched inserts record committed, failed, and skipped readings and roll back failed transactions.
+* A Makefile provides repeatable commands for startup, testing, smoke testing, materialized-view refresh, and benchmarking.
+* Unit tests cover API health, payload validation, batch formatting, ingestion metrics, commit accounting, and rollback behavior.
+* A PostgreSQL-backed integration test verifies schema initialization, seeded sensor metadata, telemetry insertion, materialized-view refresh, and field-summary queries.
+* A local smoke test verifies the complete Docker Compose data flow.
+* Benchmark runs report both generated readings and rows successfully committed to PostgreSQL.
+* GitHub Actions runs separate unit-test and PostgreSQL integration-test jobs for pushes and pull requests.
 
 ## Tradeoffs and Limitations
 
-This project is designed as a portfolio-scale backend/data system, not a production deployment.
+This project is designed as a portfolio-scale backend and data-engineering system rather than a production deployment.
 
 Current limitations:
 
-- Materialized views are refreshed manually rather than on a schedule.
-- The simulator runs inside one container and uses Python threads rather than distributed sensor clients.
-- Current CI runs unit tests only; Docker Compose integration and smoke tests are verified locally.
-- Current tests do not yet include database-backed integration tests for schema initialization, materialized view refresh, or API queries against a live PostgreSQL instance.
-- There is no production-grade authentication or authorization.
-- Retention logic is planned but not yet implemented as a scheduled maintenance process.
+* Materialized views are refreshed manually rather than on a schedule.
+* The simulator runs in one container using Python threads rather than distributed sensor clients.
+* Benchmark results are local measurements and are not production capacity guarantees.
+* The default database seed contains 500 sensors, so larger simulations require additional sensor metadata.
+* The API does not include production-grade authentication or authorization.
+* Raw-data retention is not yet implemented as a scheduled maintenance process.
 
 ## Future Improvements
 
-Planned improvements:
+Potential extensions include:
 
-- Add database-backed integration tests for schema initialization, materialized view refresh, and API summary queries.
-- Add a separate optional GitHub Actions workflow for Docker Compose integration tests.
-- Add scheduled or concurrent materialized view refresh.
-- Add raw-data retention script for old partitions.
-- Add benchmark result tables to the README for common configurations such as 500, 1000, and 5000 virtual sensors.
+* Schedule materialized-view refreshes or support `REFRESH MATERIALIZED VIEW CONCURRENTLY`.
+* Add automated raw-data retention and partition maintenance.
+* Add authentication and role-based authorization.
+* Add metrics and tracing for queue depth, batch latency, and database write latency.
+* Build a distributed load generator for simulations beyond the locally seeded sensor set.

@@ -143,9 +143,11 @@ make test
 
 The default test suite includes:
 
-- API health check
+- API health checks
 - Sensor payload validation
 - Ingestion batch formatting
+- Ingestion metric and commit-accounting behavior
+- Transaction rollback and database-pool failure behavior
 
 Database-backed integration testing is available through a separate command because it requires a running PostgreSQL service.
 
