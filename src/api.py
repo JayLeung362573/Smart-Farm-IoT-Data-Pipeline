@@ -127,6 +127,12 @@ def get_field_summary(field_id: int):
                 WHERE f.field_id = %s
                 GROUP BY f.field_id, f.name;
             """, (field_id,))
+            
+            result = cur.fetchone()
+
+        return result or {
+            "message": "No data found for this field in the selected window"
+        }
     
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
