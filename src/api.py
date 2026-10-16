@@ -109,18 +109,24 @@ def get_field_summary(field_id: int):
         with conn.cursor(cursor_factory=extras.RealDictCursor) as cur:
             cur.execute("""
                 SELECT
-                    f.name as field_name,
-                    SUM(mv.sample_count) as total_readings,
-                    ROUND(AVG(mv.avg_moisture)::numeric, 2) as avg_moisture,
-                    ROUND(AVG(mv.avg_temperature)::numeric, 2) as avg_temp
+                    f.name AS field_name,
+                    SUM(mv.sample_count) AS total_readings,
+                    ROUND(
+                        (SUM(mv.sum_moisture)
+                         / NULLIF(SUM(mv.sample_count), 0))::numeric,
+                        2
+                    ) AS avg_moisture,
+                    ROUND(
+                        (SUM(mv.sum_temperature)
+                         / NULLIF(SUM(mv.sample_count), 0))::numeric,
+                        2
+                    ) AS avg_temp
                 FROM fields f
-                JOIN sensors s on f.field_id = s.field_id
+                JOIN sensors s ON f.field_id = s.field_id
                 JOIN hourly_sensor_stats mv ON s.sensor_id = mv.sensor_id
                 WHERE f.field_id = %s
-                GROUP BY f.name;
+                GROUP BY f.field_id, f.name;
             """, (field_id,))
-            result = cur.fetchone()
-        return result or {"message": "No data found for this field in the selected window"}
     
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

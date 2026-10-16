@@ -47,11 +47,12 @@ CREATE INDEX idx_sensor_brin ON sensor_data USING BRIN (created_at);
 CREATE MATERIALIZED VIEW hourly_sensor_stats AS
 SELECT
     sensor_id,
-    date_trunc('hour', created_at) as hour_bucket,
-    ROUND(AVG(moisture)::numeric, 2) as avg_moisture,
-    ROUND(AVG(temperature)::numeric, 2) as avg_temperature,
-    COUNT(*) as sample_count
-
+    date_trunc('hour', created_at) AS hour_bucket,
+    SUM(moisture) AS sum_moisture,
+    SUM(temperature) AS sum_temperature,
+    COUNT(*) AS sample_count,
+    ROUND(AVG(moisture)::numeric, 2) AS avg_moisture,
+    ROUND(AVG(temperature)::numeric, 2) AS avg_temperature
 FROM sensor_data
 GROUP BY sensor_id, hour_bucket
 WITH DATA;
