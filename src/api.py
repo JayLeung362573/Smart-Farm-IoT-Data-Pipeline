@@ -89,6 +89,8 @@ def get_latest_reading(sensor_id: int):
                 raise HTTPException(status_code=404, detail=f"No data found for sensor {sensor_id}")
             return result
         
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     finally:
