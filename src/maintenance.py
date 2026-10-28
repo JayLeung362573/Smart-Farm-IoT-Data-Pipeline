@@ -1,19 +1,11 @@
 import psycopg2
 import logging
-import os
+from src.config import Config
 
 def run_maintenance():
-    db_host = os.getenv("DB_HOST", "127.0.0.1")
-    db_password = os.getenv("DB_PASSWORD", "3221")
 
     try:
-        conn = psycopg2.connect(
-            dbname="smart_farm", 
-            user="postgres", 
-            password=db_password,
-            host=db_host,
-            port="5432"
-        )
+        conn = psycopg2.connect(**Config.get_db_params())
 
         conn.autocommit = True
         cur = conn.cursor()

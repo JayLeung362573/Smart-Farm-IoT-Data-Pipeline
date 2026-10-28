@@ -1,14 +1,8 @@
 import psycopg2
-import os
+from src.config import Config
 
 def seed():
-    conn = psycopg2.connect(
-        dbname=os.getenv("DB_NAME", "smart_farm"), 
-        user=os.getenv("DB_USER", "postgres"), 
-        password=os.getenv("DB_PASSWORD", "3221"), 
-        host=os.getenv("DB_HOST", "127.0.0.1"),
-        port=os.getenv("DB_PORT", "5432")
-    )
+    conn = psycopg2.connect(**Config.get_db_params())
     cur = conn.cursor()
 
     # clean up existing metadata to allow new seeding

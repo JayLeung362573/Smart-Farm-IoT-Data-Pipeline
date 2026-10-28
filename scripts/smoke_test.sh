@@ -26,7 +26,7 @@ docker-compose run --rm --no-deps \
   -e DB_NAME=smart_farm \
   -e DB_USER=postgres \
   -e DB_PASSWORD=3221 \
-  api python scripts/refresh_views.py
+  api python -m scripts.refresh_views
 
 echo "Checking field summary..."
 SUMMARY_RESPONSE=$(curl -s http://localhost:8000/fields/1/summary)

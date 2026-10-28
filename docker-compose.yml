@@ -18,7 +18,7 @@ services:
 
   seeder:
     build: .
-    command: python src/seed_db.py
+    command: python -m src.seed_db
     environment:
       DB_HOST: db
       DB_PORT: "5432"

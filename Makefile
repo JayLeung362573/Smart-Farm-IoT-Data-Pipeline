@@ -29,7 +29,7 @@ refresh:
 		-e DB_NAME=smart_farm \
 		-e DB_USER=postgres \
 		-e DB_PASSWORD=3221 \
-		api python scripts/refresh_views.py
+		api python -m scripts.refresh_views
 
 benchmark-smoke:
 	python3 scripts/benchmark_ingestion.py \
