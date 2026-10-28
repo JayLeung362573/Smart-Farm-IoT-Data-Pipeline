@@ -3,23 +3,16 @@ from typing import List, Optional
 import psycopg2
 from psycopg2 import pool, extras
 import logging
-import os
+from src.config import Config
 
 # 1. Initialize FastAPI
 app = FastAPI(title="Smart Farm IoT API",
               description="Real-time access to partitioned sensor data",
               version="1.0.0")
 
-DB_HOST = os.getenv("DB_HOST", "127.0.0.1")
-DB_PASSWORD = os.getenv("DB_PASSWORD", "3221")
-
-DB_PARAMS = {
-    "user": "postgres",
-    "password": DB_PASSWORD, 
-    "host": DB_HOST,
-    "port": "5432",
-    "database": "smart_farm"
-}
+db_pool = psycopg2.pool.SimpleConnectionPool(
+    1, 20, **Config.get_db_params()
+)
 
 # 3. Setup API Connection Pool
 try:
@@ -127,7 +120,7 @@ def get_field_summary(field_id: int):
                 WHERE f.field_id = %s
                 GROUP BY f.field_id, f.name;
             """, (field_id,))
-            
+
             result = cur.fetchone()
 
         return result or {
