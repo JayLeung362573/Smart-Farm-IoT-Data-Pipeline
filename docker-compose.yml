@@ -48,7 +48,7 @@ services:
 
   engine:
     build: .
-    command: python src/simulator.py
+    command: python -m src.simulator
     environment:
       DB_HOST: db
       DB_PORT: "5432"

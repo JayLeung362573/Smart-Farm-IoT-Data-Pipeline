@@ -42,7 +42,8 @@ def main():
         "-e", f"RUN_SECONDS={args.duration}",
         "engine",
         "python",
-        "src/simulator.py",
+        "-m",
+        "src.simulator",
     ]
 
     print("Running ingestion benchmark with:")
