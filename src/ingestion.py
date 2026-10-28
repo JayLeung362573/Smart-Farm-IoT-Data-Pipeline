@@ -5,21 +5,13 @@ import logging
 import queue
 import time
 import os
+from src.config import Config
 
 # Configure structured logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s [Worker-%(thread)d] %(levelname)s: %(message)s')
 
-DB_HOST = os.getenv("DB_HOST", "127.0.0.1")
-DB_PASSWORD = os.getenv("DB_PASSWORD", "3221")
 BATCH_SIZE = int(os.getenv("BATCH_SIZE", "100"))
 
-DB_PARAMS = {
-    "user": "postgres",
-    "password": DB_PASSWORD, 
-    "host": DB_HOST,
-    "port": "5432",
-    "database": "smart_farm"
-}
 
 db_pool = None
 
@@ -61,7 +53,9 @@ def init_pool():
     global db_pool
     while db_pool is None:
         try:
-            db_pool = psycopg2.pool.SimpleConnectionPool(1, 20, **DB_PARAMS)
+            db_pool = psycopg2.pool.SimpleConnectionPool(
+                1, 20, **Config.get_db_params()
+            )
             logging.info("Successfully connected to the database pool.")
         except Exception as e:
             logging.error(f"Database not ready yet. Retrying in 2s: {e}")
