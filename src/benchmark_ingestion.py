@@ -4,8 +4,8 @@ import threading
 import random
 import uuid
 import psycopg2
-from config import Config
-from ingestion import start_workers
+from src.config import Config
+from src.ingestion import start_workers
 
 NUM_SENSORS = 500
 TEST_DURATION = 3

@@ -69,7 +69,7 @@ docker-compose run --rm --no-deps \
   -e DB_NAME=smart_farm \
   -e DB_USER=postgres \
   -e DB_PASSWORD=3221 \
-  api python scripts/refresh_views.py
+  api python -m scripts.refresh_views
 ```
 
 This design avoids refreshing the view on every insert, which would slow down ingestion.

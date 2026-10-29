@@ -1,8 +1,9 @@
 import psycopg2
 import time
+from src.config import Config
 
 def run_benchmark():
-    conn = psycopg2.connect(dbname="smart_farm", user="postgres", password="3221", host="127.0.0.1")
+    conn = psycopg2.connect(**Config.get_db_params())
     cur = conn.cursor()
 
     print("Starting 10-second throughput benchmark.")

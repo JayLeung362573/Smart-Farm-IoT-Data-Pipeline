@@ -1,15 +1,9 @@
-import os
+from src.config import Config
 import psycopg2
 
 
 def refresh_views():
-    conn = psycopg2.connect(
-        dbname=os.getenv("DB_NAME", "smart_farm"),
-        user=os.getenv("DB_USER", "postgres"),
-        password=os.getenv("DB_PASSWORD", "3221"),
-        host=os.getenv("DB_HOST", "127.0.0.1"),
-        port=os.getenv("DB_PORT", "5432"),
-    )
+    conn = psycopg2.connect(**Config.get_db_params())
 
     try:
         with conn.cursor() as cur:

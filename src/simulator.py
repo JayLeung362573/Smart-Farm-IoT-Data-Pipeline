@@ -44,7 +44,7 @@ def virtual_sensor(sensor_id):
         time.sleep(random.uniform(0.5, 1.5))
 
 if __name__ == "__main__":
-    from ingestion import (
+    from src.ingestion import (
         fetch_sensor_ids,
         get_ingestion_metrics,
         reset_ingestion_metrics,

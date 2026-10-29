@@ -3,7 +3,7 @@ import uuid
 import random
 import psycopg2
 from psycopg2 import extras
-from config import Config
+from src.config import Config
 
 NUM_RECORDS = 5000
 
