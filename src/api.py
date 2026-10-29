@@ -3,25 +3,27 @@ from typing import List, Optional
 import psycopg2
 from psycopg2 import pool, extras
 import logging
+
 from src.config import Config
 
-# 1. Initialize FastAPI
-app = FastAPI(title="Smart Farm IoT API",
-              description="Real-time access to partitioned sensor data",
-              version="1.0.0")
 
-db_pool = psycopg2.pool.SimpleConnectionPool(
-    1, 20, **Config.get_db_params()
+app = FastAPI(
+    title="Smart Farm IoT API",
+    description="Real-time access to partitioned sensor data",
+    version="1.0.0",
 )
 
-# 3. Setup API Connection Pool
+db_pool = None
+
 try:
-    db_pool = psycopg2.pool.SimpleConnectionPool(1, 20, **DB_PARAMS)
+    db_pool = psycopg2.pool.SimpleConnectionPool(
+        1, 20, **Config.get_db_params()
+    )
     print("API Connection Pool Initialized")
 except Exception as e:
     print(f"Failed to initialize API pool: {e}")
 
-# 4. Helper to handle Pool lifecycle
+
 def get_db():
     conn = db_pool.getconn()
     try:
