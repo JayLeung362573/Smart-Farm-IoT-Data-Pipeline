@@ -130,7 +130,9 @@ def test_field_summary_uses_unrounded_sums(
     # test's uncommitted data. SQL execution is not mocked.
     database_pool = MagicMock()
     database_pool.getconn.return_value = conn
-    monkeypatch.setattr(api, "db_pool", database_pool, raising=False)
+
+    pool_factory = MagicMock(return_value=database_pool)
+    monkeypatch.setattr(api, "create_db_pool", pool_factory)
 
     field_name = f"summary_{uuid.uuid4().hex}"
     reading_time = datetime(2026, 3, 15, 12, tzinfo=timezone.utc)
@@ -195,6 +197,10 @@ def test_field_summary_uses_unrounded_sums(
             expected_temperature
         )
         database_pool.putconn.assert_called_once_with(conn)
+
+        pool_factory.assert_called_once_with()
+        database_pool.closeall.assert_called_once_with()
+        assert api.db_pool is None
 
     finally:
         # Undo the inserted data and materialized-view refresh.
