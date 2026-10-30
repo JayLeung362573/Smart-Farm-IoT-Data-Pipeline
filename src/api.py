@@ -1,27 +1,34 @@
-from fastapi import FastAPI, HTTPException, Query
-from typing import List, Optional
-import psycopg2
-from psycopg2 import pool, extras
-import logging
+from contextlib import asynccontextmanager
 
-from src.config import Config
+from fastapi import FastAPI, HTTPException
+from psycopg2 import extras
+
+from src.db import create_db_pool
+
+
+db_pool = None
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    global db_pool
+
+    app_pool = create_db_pool()
+    db_pool = app_pool
+
+    try:
+        yield
+    finally:
+        db_pool = None
+        app_pool.closeall()
 
 
 app = FastAPI(
     title="Smart Farm IoT API",
     description="Real-time access to partitioned sensor data",
     version="1.0.0",
+    lifespan=lifespan,
 )
-
-db_pool = None
-
-try:
-    db_pool = psycopg2.pool.SimpleConnectionPool(
-        1, 20, **Config.get_db_params()
-    )
-    print("API Connection Pool Initialized")
-except Exception as e:
-    print(f"Failed to initialize API pool: {e}")
 
 
 def get_db():
